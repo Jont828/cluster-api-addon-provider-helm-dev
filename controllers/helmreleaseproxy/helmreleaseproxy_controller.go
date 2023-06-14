@@ -217,6 +217,7 @@ func (r *HelmReleaseProxyReconciler) reconcileNormal(ctx context.Context, helmRe
 		helmReleaseProxy.SetReleaseStatus(status.String())
 		helmReleaseProxy.SetReleaseRevision(release.Version)
 		helmReleaseProxy.SetReleaseName(release.Name)
+		log.V(0).Info("Release resources are", "resources", release.Info.Resources)
 
 		if status == helmRelease.StatusDeployed {
 			conditions.MarkTrue(helmReleaseProxy, addonsv1alpha1.HelmReleaseReadyCondition)

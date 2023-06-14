@@ -382,6 +382,26 @@ func GetHelmRelease(ctx context.Context, kubeconfig string, spec addonsv1alpha1.
 	return release, nil
 }
 
+// GetHelmReleaseStatus returns the status of a Helm release if it exists.
+func GetHelmReleaseStatus(ctx context.Context, kubeconfig string, spec addonsv1alpha1.HelmReleaseProxySpec) (*helmRelease.Release, error) {
+	if spec.ReleaseName == "" {
+		return nil, helmDriver.ErrReleaseNotFound
+	}
+
+	_, actionConfig, err := HelmInit(ctx, spec.ReleaseNamespace, kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+	statusClient := helmAction.NewStatus(actionConfig)
+	statusClient.ShowResources = true
+	release, err := statusClient.Run(spec.ReleaseName)
+	if err != nil {
+		return nil, err
+	}
+
+	return release, nil
+}
+
 // ListHelmReleases lists all Helm releases in a namespace.
 func ListHelmReleases(ctx context.Context, kubeconfig string, spec addonsv1alpha1.HelmReleaseProxySpec) ([]*helmRelease.Release, error) {
 	_, actionConfig, err := HelmInit(ctx, spec.ReleaseNamespace, kubeconfig)

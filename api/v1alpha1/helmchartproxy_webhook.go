@@ -21,6 +21,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 // log is for logging in this package.
@@ -52,26 +53,21 @@ func (p *HelmChartProxy) Default() {
 
 var _ webhook.Validator = &HelmChartProxy{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *HelmChartProxy) ValidateCreate() error {
-	helmchartproxylog.Info("validate create", "name", r.Name)
-
-	// TODO(user): fill in your validation logic upon object creation.
-	return nil
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
+func (c *HelmChartProxy) ValidateCreate() (admission.Warnings, error) {
+	return nil, nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *HelmChartProxy) ValidateUpdate(old runtime.Object) error {
-	helmchartproxylog.Info("validate update", "name", r.Name)
+func (c *HelmChartProxy) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
+	helmchartproxylog.Info("validate update", "name", c.Name)
 
-	// TODO(user): fill in your validation logic upon object update.
-	return nil
+	return nil, nil
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *HelmChartProxy) ValidateDelete() error {
-	helmchartproxylog.Info("validate delete", "name", r.Name)
+func (c *HelmChartProxy) ValidateDelete() (admission.Warnings, error) {
+	helmchartproxylog.Info("validate delete", "name", c.Name)
 
-	// TODO(user): fill in your validation logic upon object deletion.
-	return nil
+	return nil, nil
 }

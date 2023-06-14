@@ -241,7 +241,6 @@ generate-go: $(CONTROLLER_GEN) $(KUSTOMIZE) ## Generate manifests e.g. CRD, RBAC
 generate-modules: ## Run go mod tidy to ensure modules are up to date
 	go mod tidy
 	cd $(TOOLS_DIR); go mod tidy
-	cd $(TEST_DIR); go mod tidy
 
 ## --------------------------------------
 ## Lint / Verify

@@ -178,6 +178,14 @@ spec:
                   - type
                   type: object
                 type: array
+              resources:
+                additionalProperties:
+                  items:
+                    type: string
+                  type: array
+                description: Resources is a map of resource types to a list of resources
+                  of that type.
+                type: object
               revision:
                 description: Revision is the current revision of the Helm release.
                 type: integer

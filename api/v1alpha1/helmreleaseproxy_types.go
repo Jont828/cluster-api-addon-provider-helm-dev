@@ -80,6 +80,10 @@ type HelmReleaseProxyStatus struct {
 	// Revision is the current revision of the Helm release.
 	// +optional
 	Revision int `json:"revision,omitempty"`
+
+	// Resources is a map of resource types to a list of resources of that type.
+	// +optional
+	Resources map[string][]string `json:"resources,omitempty"`
 }
 
 // +kubebuilder:object:root=true

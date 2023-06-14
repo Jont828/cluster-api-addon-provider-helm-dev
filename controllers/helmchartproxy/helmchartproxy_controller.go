@@ -27,11 +27,11 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	addonsv1alpha1 "sigs.k8s.io/cluster-api-addon-provider-helm/api/v1alpha1"
 
@@ -50,41 +50,37 @@ type HelmChartProxyReconciler struct {
 
 	// WatchFilterValue is the label value used to filter events prior to reconciliation.
 	WatchFilterValue string
+
+	// externalTracker external.ObjectTracker
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *HelmChartProxyReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	log := ctrl.LoggerFrom(ctx)
 
-	c, err := ctrl.NewControllerManagedBy(mgr).
+	return ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
 		For(&addonsv1alpha1.HelmChartProxy{}).
 		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(log, r.WatchFilterValue)).
-		// WithEventFilter(predicates.ResourceIsNotExternallyManaged(log)).
-		Build(r)
-	if err != nil {
-		return errors.Wrap(err, "error creating controller")
-	}
-
-	// Add a watch on clusterv1.Cluster object for changes.
-	if err = c.Watch(
-		&source.Kind{Type: &clusterv1.Cluster{}},
-		handler.EnqueueRequestsFromMapFunc(r.ClusterToHelmChartProxiesMapper),
-		predicates.ResourceNotPausedAndHasFilterLabel(log, r.WatchFilterValue),
-	); err != nil {
-		return errors.Wrap(err, "failed adding a watch for Clusters")
-	}
-
-	// Add a watch on HelmReleaseProxy object for changes.
-	if err = c.Watch(
-		&source.Kind{Type: &addonsv1alpha1.HelmReleaseProxy{}},
-		handler.EnqueueRequestsFromMapFunc(HelmReleaseProxyToHelmChartProxyMapper),
-		predicates.ResourceNotPausedAndHasFilterLabel(log, r.WatchFilterValue),
-	); err != nil {
-		return errors.Wrap(err, "failed adding a watch for HelmReleaseProxies")
-	}
-
-	return nil
+		Watches(
+			&clusterv1.Cluster{},
+			handler.EnqueueRequestsFromMapFunc(r.ClusterToHelmChartProxiesMapper),
+			builder.WithPredicates(
+				predicates.All(ctrl.LoggerFrom(ctx),
+					predicates.ResourceHasFilterLabel(ctrl.LoggerFrom(ctx), r.WatchFilterValue),
+				),
+			),
+		).
+		Watches(
+			&addonsv1alpha1.HelmReleaseProxy{},
+			handler.EnqueueRequestsFromMapFunc(HelmReleaseProxyToHelmChartProxyMapper),
+			builder.WithPredicates(
+				predicates.All(ctrl.LoggerFrom(ctx),
+					predicates.ResourceHasFilterLabel(ctrl.LoggerFrom(ctx), r.WatchFilterValue),
+				),
+			),
+		).
+		Complete(r)
 }
 
 //+kubebuilder:rbac:groups=addons.cluster.x-k8s.io,resources=helmchartproxies,verbs=get;list;watch;create;update;patch;delete
@@ -331,7 +327,9 @@ func patchHelmChartProxy(ctx context.Context, patchHelper *patch.Helper, helmCha
 }
 
 // ClusterToHelmChartProxiesMapper is a mapper function that maps a Cluster to the HelmChartProxies that would select the Cluster.
-func (r *HelmChartProxyReconciler) ClusterToHelmChartProxiesMapper(o client.Object) []ctrl.Request {
+func (r *HelmChartProxyReconciler) ClusterToHelmChartProxiesMapper(ctx context.Context, o client.Object) []ctrl.Request {
+	log := ctrl.LoggerFrom(ctx)
+
 	cluster, ok := o.(*clusterv1.Cluster)
 	if !ok {
 		// Suppress the error for now
@@ -344,6 +342,7 @@ func (r *HelmChartProxyReconciler) ClusterToHelmChartProxiesMapper(o client.Obje
 	// TODO: Figure out if we want this search to be cross-namespaces.
 
 	if err := r.Client.List(context.TODO(), helmChartProxies, client.InNamespace(cluster.Namespace)); err != nil {
+		log.Error(err, "Failed to list HelmChartProxies")
 		return nil
 	}
 
@@ -368,11 +367,13 @@ func (r *HelmChartProxyReconciler) ClusterToHelmChartProxiesMapper(o client.Obje
 
 // HelmReleaseProxyToHelmChartProxyMapper is a mapper function that maps a HelmReleaseProxy to the HelmChartProxy that owns it.
 // This is used to trigger an update of the HelmChartProxy when a HelmReleaseProxy is changed.
-func HelmReleaseProxyToHelmChartProxyMapper(o client.Object) []ctrl.Request {
+func HelmReleaseProxyToHelmChartProxyMapper(ctx context.Context, o client.Object) []ctrl.Request {
+	log := ctrl.LoggerFrom(ctx)
+
 	helmReleaseProxy, ok := o.(*addonsv1alpha1.HelmReleaseProxy)
 	if !ok {
 		// Suppress the error for now
-		fmt.Printf("Expected a HelmReleaseProxy but got %T\n", o)
+		log.Error(errors.Errorf("Expected a HelmReleaseProxy but got %T", o), "Failed to map HelmReleaseProxy to HelmChartProxy")
 		return nil
 	}
 
