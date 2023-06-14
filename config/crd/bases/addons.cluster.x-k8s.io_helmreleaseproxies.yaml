@@ -292,6 +292,14 @@ spec:
                   - type
                   type: object
                 type: array
+              resources:
+                additionalProperties:
+                  items:
+                    type: string
+                  type: array
+                description: Resources is a map of Kubernetes resource types to resource
+                  names created by the Helm release.
+                type: object
               revision:
                 description: Revision is the current revision of the Helm release.
                 type: integer

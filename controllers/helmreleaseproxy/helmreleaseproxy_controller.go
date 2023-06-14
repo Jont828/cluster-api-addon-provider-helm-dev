@@ -24,6 +24,8 @@ import (
 	helmRelease "helm.sh/helm/v3/pkg/release"
 	helmDriver "helm.sh/helm/v3/pkg/storage/driver"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -227,6 +229,17 @@ func (r *HelmReleaseProxyReconciler) reconcileNormal(ctx context.Context, helmRe
 			conditions.MarkFalse(helmReleaseProxy, addonsv1alpha1.HelmReleaseReadyCondition, addonsv1alpha1.HelmInstallOrUpgradeFailedReason, clusterv1.ConditionSeverityError, fmt.Sprintf("Helm release failed: %s", status))
 			// TODO: should we set the error state again here?
 		}
+
+		releaseStatus, err := internal.GetHelmReleaseStatus(ctx, kubeconfig, helmReleaseProxy.Spec)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get status for release '%s' on cluster %s", helmReleaseProxy.Spec.ReleaseName, helmReleaseProxy.Spec.ClusterRef.Name)
+		}
+		resources, err := parseHelmReleaseResources(ctx, releaseStatus.Info.Resources)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get resources for release '%s' on cluster %s", helmReleaseProxy.Spec.ReleaseName, helmReleaseProxy.Spec.ClusterRef.Name)
+		}
+
+		helmReleaseProxy.Status.Resources = resources
 	}
 
 	return err
@@ -280,6 +293,61 @@ func initalizeConditions(ctx context.Context, patchHelper *patch.Helper, helmRel
 			log.Error(err, "failed to patch HelmReleaseProxy with initial conditions")
 		}
 	}
+}
+
+func parseHelmReleaseResources(ctx context.Context, resourceMap map[string][]runtime.Object) (map[string][]string, error) {
+	log := ctrl.LoggerFrom(ctx)
+
+	result := make(map[string][]string)
+
+	for resourceType, resources := range resourceMap {
+		resourceList := make([]string, 0)
+		for _, obj := range resources {
+			// log.Info("Obj is", "obj", obj)
+			resource, ok := obj.(*unstructured.Unstructured)
+			if !ok {
+				return nil, fmt.Errorf("attempt to decode non-Unstructured object of type %T", obj)
+			}
+			log.Info("Resource type is", "resource", fmt.Sprintf("%T", resource))
+			table := &metav1.Table{}
+			if err := runtime.DefaultUnstructuredConverter.FromUnstructured(resource.Object, table); err != nil {
+				return nil, err
+			}
+
+			for i := range table.Rows {
+				row := &table.Rows[i]
+				if row.Object.Raw == nil || row.Object.Object != nil {
+					continue
+				}
+				converted, err := runtime.Decode(unstructured.UnstructuredJSONScheme, row.Object.Raw)
+				if err != nil {
+					return nil, err
+				}
+				row.Object.Object = converted
+			}
+
+			for _, row := range table.Rows {
+				nameIface := row.Cells[0]
+				name, ok := nameIface.(string)
+				if !ok {
+					return nil, fmt.Errorf("unexpected type for name column: %T", nameIface)
+				}
+				log.Info("Name is", "name", name)
+				log.Info("Columns are", "columns", table.ColumnDefinitions)
+				log.Info("Row cells are", "cells", row.Cells)
+				resourceList = append(resourceList, name)
+			}
+
+			// printer := printers.JSONPrinter{}
+			// log.Info("Table is", "table", table)
+			// printer.PrintObj(table, os.Stdout)
+
+		}
+
+		result[resourceType] = resourceList
+	}
+
+	return result, nil
 }
 
 // patchHelmReleaseProxy patches the HelmReleaseProxy object and sets the ReadyCondition as an aggregate of the other condition set.
