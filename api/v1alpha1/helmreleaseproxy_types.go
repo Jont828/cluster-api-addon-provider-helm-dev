@@ -88,7 +88,7 @@ type HelmReleaseProxyStatus struct {
 
 	// Resources is a map of Kubernetes resource types to resource names created by the Helm release.
 	// +optional
-	Resources map[string][]string `json:"resources,omitempty"`
+	Resources map[string][]map[string]string `json:"resources,omitempty"`
 }
 
 // +kubebuilder:object:root=true

@@ -295,13 +295,13 @@ func initalizeConditions(ctx context.Context, patchHelper *patch.Helper, helmRel
 	}
 }
 
-func parseHelmReleaseResources(ctx context.Context, resourceMap map[string][]runtime.Object) (map[string][]string, error) {
+func parseHelmReleaseResources(ctx context.Context, resourceMap map[string][]runtime.Object) (map[string][]map[string]string, error) {
 	log := ctrl.LoggerFrom(ctx)
 
-	result := make(map[string][]string)
+	result := make(map[string][]map[string]string)
 
 	for resourceType, resources := range resourceMap {
-		resourceList := make([]string, 0)
+		resourceList := make([]map[string]string, 0)
 		for _, obj := range resources {
 			// log.Info("Obj is", "obj", obj)
 			resource, ok := obj.(*unstructured.Unstructured)
@@ -326,16 +326,17 @@ func parseHelmReleaseResources(ctx context.Context, resourceMap map[string][]run
 				row.Object.Object = converted
 			}
 
+			columnMap := make(map[string]string)
 			for _, row := range table.Rows {
-				nameIface := row.Cells[0]
-				name, ok := nameIface.(string)
-				if !ok {
-					return nil, fmt.Errorf("unexpected type for name column: %T", nameIface)
+				for j, cell := range row.Cells {
+					column := table.ColumnDefinitions[j].Name
+					cellVal := fmt.Sprintf("%v", cell)
+					// log.Info("Name is", "name", name)
+					// log.Info("Columns are", "columns", table.ColumnDefinitions)
+					// log.Info("Row cells are", "cells", row.Cells)
+					columnMap[column] = cellVal
+					resourceList = append(resourceList, columnMap)
 				}
-				log.Info("Name is", "name", name)
-				log.Info("Columns are", "columns", table.ColumnDefinitions)
-				log.Info("Row cells are", "cells", row.Cells)
-				resourceList = append(resourceList, name)
 			}
 
 			// printer := printers.JSONPrinter{}

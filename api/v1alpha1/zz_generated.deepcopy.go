@@ -282,15 +282,23 @@ func (in *HelmReleaseProxyStatus) DeepCopyInto(out *HelmReleaseProxyStatus) {
 	}
 	if in.Resources != nil {
 		in, out := &in.Resources, &out.Resources
-		*out = make(map[string][]string, len(*in))
+		*out = make(map[string][]map[string]string, len(*in))
 		for key, val := range *in {
-			var outVal []string
+			var outVal []map[string]string
 			if val == nil {
 				(*out)[key] = nil
 			} else {
 				in, out := &val, &outVal
-				*out = make([]string, len(*in))
-				copy(*out, *in)
+				*out = make([]map[string]string, len(*in))
+				for i := range *in {
+					if (*in)[i] != nil {
+						in, out := &(*in)[i], &(*out)[i]
+						*out = make(map[string]string, len(*in))
+						for key, val := range *in {
+							(*out)[key] = val
+						}
+					}
+				}
 			}
 			(*out)[key] = outVal
 		}
