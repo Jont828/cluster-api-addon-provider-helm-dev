@@ -24,7 +24,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
-	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
@@ -59,14 +58,15 @@ func (p *HelmReleaseProxy) Default() {
 var _ webhook.Validator = &HelmReleaseProxy{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *HelmReleaseProxy) ValidateCreate() (admission.Warnings, error) {
+func (r *HelmReleaseProxy) ValidateCreate() error {
 	helmreleaseproxylog.Info("validate create", "name", r.Name)
 
-	return nil, nil
+	// TODO(user): fill in your validation logic upon object creation.
+	return nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *HelmReleaseProxy) ValidateUpdate(oldRaw runtime.Object) (admission.Warnings, error) {
+func (r *HelmReleaseProxy) ValidateUpdate(oldRaw runtime.Object) error {
 	helmreleaseproxylog.Info("validate update", "name", r.Name)
 
 	var allErrs field.ErrorList
@@ -96,16 +96,16 @@ func (r *HelmReleaseProxy) ValidateUpdate(oldRaw runtime.Object) (admission.Warn
 	// TODO: add webhook for ReleaseName. Currently it's being set if the release name is generated.
 
 	if len(allErrs) > 0 {
-		return nil, apierrors.NewInvalid(GroupVersion.WithKind("HelmReleaseProxy").GroupKind(), r.Name, allErrs)
+		return apierrors.NewInvalid(GroupVersion.WithKind("HelmReleaseProxy").GroupKind(), r.Name, allErrs)
 	}
 
-	return nil, nil
+	return nil
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *HelmReleaseProxy) ValidateDelete() (admission.Warnings, error) {
+func (r *HelmReleaseProxy) ValidateDelete() error {
 	helmreleaseproxylog.Info("validate delete", "name", r.Name)
 
 	// TODO(user): fill in your validation logic upon object deletion.
-	return nil, nil
+	return nil
 }
