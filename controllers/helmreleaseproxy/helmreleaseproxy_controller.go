@@ -326,8 +326,8 @@ func parseHelmReleaseResources(ctx context.Context, resourceMap map[string][]run
 				row.Object.Object = converted
 			}
 
-			columnMap := make(map[string]string)
 			for _, row := range table.Rows {
+				columnMap := make(map[string]string)
 				for j, cell := range row.Cells {
 					column := table.ColumnDefinitions[j].Name
 					cellVal := fmt.Sprintf("%v", cell)
@@ -335,8 +335,8 @@ func parseHelmReleaseResources(ctx context.Context, resourceMap map[string][]run
 					// log.Info("Columns are", "columns", table.ColumnDefinitions)
 					// log.Info("Row cells are", "cells", row.Cells)
 					columnMap[column] = cellVal
-					resourceList = append(resourceList, columnMap)
 				}
+				resourceList = append(resourceList, columnMap)
 			}
 
 			// printer := printers.JSONPrinter{}
