@@ -89,56 +89,48 @@ var _ = Describe("Workload cluster creation", func() {
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
 					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				}),
-				// withPostMachinesProvisioned(func() {
-				// 	EnsureDaemonsets(ctx, func() DaemonsetsSpecInput {
-				// 		return DaemonsetsSpecInput{
-				// 			BootstrapClusterProxy: bootstrapClusterProxy,
-				// 			Namespace:             namespace,
-				// 			ClusterName:           clusterName,
-				// 		}
-				// 	})
 				// }),
 			), result)
-		})
 
-		// Create new Helm chart
-		By("Creating new HelmChartProxy to install nginx", func() {
-			hcp := &addonsv1alpha1.HelmChartProxy{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: addonsv1alpha1.GroupVersion.String(),
-					Kind:       "HelmChartProxy",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "nginx-ingress",
-				},
-				Spec: addonsv1alpha1.HelmChartProxySpec{
-					ClusterSelector: metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							"nginxIngress": "enabled",
-						},
+			// Create new Helm chart
+			By("Creating new HelmChartProxy to install nginx", func() {
+				hcp := &addonsv1alpha1.HelmChartProxy{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: addonsv1alpha1.GroupVersion.String(),
+						Kind:       "HelmChartProxy",
 					},
-					ReleaseName: "nginx-ingress",
-					ChartName:   "nginx-ingress",
-					RepoURL:     "https://helm.nginx.com/stable",
-					ValuesTemplate: `controller:
-  name: "{{ .ControlPlane.metadata.name }}-nginx"
-    nginxStatus:
-      allowCidrs: 127.0.0.1,::1,{{ index .Cluster.spec.clusterNetwork.pods.cidrBlocks 0 }}`,
-					Options: &addonsv1alpha1.HelmOptions{},
-				},
-			}
-			HelmInstallSpec(ctx, func() HelmInstallInput {
-				return HelmInstallInput{
-					BootstrapClusterProxy: bootstrapClusterProxy,
-					Namespace:             namespace,
-					ClusterName:           clusterName,
-					HelmChartProxy:        hcp,
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "nginx-ingress",
+					},
+					Spec: addonsv1alpha1.HelmChartProxySpec{
+						ClusterSelector: metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"nginxIngress": "enabled",
+							},
+						},
+						ReleaseName: "nginx-ingress",
+						ChartName:   "nginx-ingress",
+						RepoURL:     "https://helm.nginx.com/stable",
+						ValuesTemplate: `controller:
+            name: "{{ .ControlPlane.metadata.name }}-nginx"
+              nginxStatus:
+                allowCidrs: 127.0.0.1,::1,{{ index .Cluster.spec.clusterNetwork.pods.cidrBlocks 0 }}`,
+						Options: &addonsv1alpha1.HelmOptions{},
+					},
 				}
+				HelmInstallSpec(ctx, func() HelmInstallInput {
+					return HelmInstallInput{
+						BootstrapClusterProxy: bootstrapClusterProxy,
+						Namespace:             namespace,
+						ClusterName:           clusterName,
+						HelmChartProxy:        hcp,
+					}
+				})
 			})
+
+			// Try to update Helm values and expect revision
+
+			// Add workload cluster
 		})
-
-		// Try to update Helm values and expect revision
-
-		// Add workload cluster
 	})
 })
