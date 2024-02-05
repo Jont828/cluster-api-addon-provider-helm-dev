@@ -156,3 +156,26 @@ func prettyPrint(v interface{}) string {
 	}
 	return string(b)
 }
+
+// logCheckpoint prints a message indicating the start or end of the current test spec,
+// including which Ginkgo node it's running on.
+//
+// Example output:
+//
+//	INFO: "With 1 worker node" started at Tue, 22 Sep 2020 13:19:08 PDT on Ginkgo node 2 of 3
+//	INFO: "With 1 worker node" ran for 18m34s on Ginkgo node 2 of 3
+func logCheckpoint(specTimes map[string]time.Time) {
+	text := CurrentSpecReport().LeafNodeText
+	start, started := specTimes[text]
+	suiteConfig, reporterConfig := GinkgoConfiguration()
+	if !started {
+		start = time.Now()
+		specTimes[text] = start
+		fmt.Fprintf(GinkgoWriter, "INFO: \"%s\" started at %s on Ginkgo node %d of %d and junit test report to file %s\n", text,
+			start.Format(time.RFC1123), GinkgoParallelProcess(), suiteConfig.ParallelTotal, reporterConfig.JUnitReport)
+	} else {
+		elapsed := time.Since(start)
+		fmt.Fprintf(GinkgoWriter, "INFO: \"%s\" ran for %s on Ginkgo node %d of %d and reported junit test to file %s\n", text,
+			elapsed.Round(time.Second), GinkgoParallelProcess(), suiteConfig.ParallelTotal, reporterConfig.JUnitReport)
+	}
+}
