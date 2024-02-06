@@ -94,5 +94,5 @@ func HelmInstallSpec(ctx context.Context, inputGetter func() HelmInstallInput) {
 	Expect(workloadClusterProxy).NotTo(BeNil())
 
 	waitInput := GetWaitForHelmReleaseDeployedInput(ctx, workloadClusterProxy, input.HelmChartProxy.Spec.ReleaseName, input.Namespace.Name, specName)
-	WaitForHelmReleaseDeployed(ctx, waitInput, e2eConfig.GetIntervals(specName, "wait-helm-release")...)
+	WaitForHelmReleaseDeployed(ctx, waitInput, e2eConfig.GetIntervals(specName, "wait-helm-release-deployed")...)
 }
