@@ -21,15 +21,11 @@ package e2e
 
 import (
 	"context"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	helmAction "helm.sh/helm/v3/pkg/action"
-	helmRelease "helm.sh/helm/v3/pkg/release"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
 	addonsv1alpha1 "sigs.k8s.io/cluster-api-addon-provider-helm/api/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -94,34 +90,6 @@ func HelmInstallSpec(ctx context.Context, inputGetter func() HelmInstallInput) {
 	workloadClusterProxy = input.BootstrapClusterProxy.GetWorkloadCluster(ctx, input.Namespace.Name, input.ClusterName)
 	Expect(workloadClusterProxy).NotTo(BeNil())
 
-	workloadKubeconfigPath := workloadClusterProxy.GetKubeconfigPath()
-
-	cliConfig := genericclioptions.NewConfigFlags(false)
-	cliConfig.KubeConfig = &workloadKubeconfigPath
-
-	actionConfig := new(helmAction.Configuration)
-	err = actionConfig.Init(cliConfig, input.Namespace.Name, "secret", Logf)
-	Expect(err).NotTo(HaveOccurred())
-
-	// Watch for Helm release
-	start := time.Now()
-
-	// Workaround atm so we don't need to deal with generated random Helm release names
-	releaseName := input.HelmChartProxy.Spec.ReleaseName
-	Expect(releaseName).NotTo(BeEmpty())
-
-	Log("starting to wait for Helm release to become available and deployed")
-	Eventually(func() bool {
-		getClient := helmAction.NewGet(actionConfig)
-
-		if release, err := getClient.Run(releaseName); err == nil {
-			if release != nil && release.Info.Status == helmRelease.StatusDeployed {
-				return true
-			}
-		}
-
-		return false
-	}, e2eConfig.GetIntervals(specName, "wait-helm-release")...).Should(BeTrue(), "Failed to get Helm release %s on cluster %s", releaseName, input.ClusterName)
-	Logf("Helm release %s is now available, took %v", releaseName, time.Since(start))
-
+	waitInput := GetWaitForHelmReleaseDeployedInput(ctx, workloadClusterProxy, input.HelmChartProxy.Spec.ReleaseName, input.Namespace.Name, specName)
+	WaitForHelmReleaseDeployed(ctx, waitInput, e2eConfig.GetIntervals(specName, "wait-helm-release")...)
 }

@@ -99,7 +99,8 @@ var _ = Describe("Workload cluster creation", func() {
 						Kind:       "HelmChartProxy",
 					},
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "nginx-ingress",
+						Name:      "nginx-ingress",
+						Namespace: namespace.Name,
 					},
 					Spec: addonsv1alpha1.HelmChartProxySpec{
 						ClusterSelector: metav1.LabelSelector{

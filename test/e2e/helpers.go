@@ -29,9 +29,12 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	helmAction "helm.sh/helm/v3/pkg/action"
+	helmRelease "helm.sh/helm/v3/pkg/release"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/kubernetes"
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -155,6 +158,61 @@ func prettyPrint(v interface{}) string {
 		return err.Error()
 	}
 	return string(b)
+}
+
+// GetWaitForHelmReleaseDeployedInput is a convenience func to compose a WaitForHelmReleaseDeployedInput
+func GetWaitForHelmReleaseDeployedInput(ctx context.Context, workloadClusterProxy framework.ClusterProxy, releaseName, namespace string, specName string) WaitForHelmReleaseDeployedInput {
+	Expect(workloadClusterProxy).NotTo(BeNil())
+
+	// Workaround atm so we don't need to deal with generated random Helm release names
+	Expect(releaseName).NotTo(BeEmpty())
+
+	workloadKubeconfigPath := workloadClusterProxy.GetKubeconfigPath()
+
+	cliConfig := genericclioptions.NewConfigFlags(false)
+	cliConfig.KubeConfig = &workloadKubeconfigPath
+
+	actionConfig := new(helmAction.Configuration)
+	err := actionConfig.Init(cliConfig, namespace, "secret", Logf)
+	Expect(err).NotTo(HaveOccurred())
+
+	return WaitForHelmReleaseDeployedInput{
+		ActionConfig: actionConfig,
+		Namespace:    namespace,
+		ReleaseName:  releaseName,
+		SpecName:     specName,
+		ClusterName:  workloadClusterProxy.GetName(),
+	}
+}
+
+// WaitForHelmReleaseDeployedInput is the input for WaitForDeploymentsAvailable.
+type WaitForHelmReleaseDeployedInput struct {
+	ActionConfig *helmAction.Configuration
+	Namespace    string
+	ReleaseName  string
+	SpecName     string
+	ClusterName  string
+}
+
+// WaitForHelmReleaseDeployed waits until the Helm release has status.Status = deployed, that signals that
+// the deployment is successful.
+func WaitForHelmReleaseDeployed(ctx context.Context, input WaitForHelmReleaseDeployedInput, intervals ...interface{}) {
+	// Watch for Helm release
+	start := time.Now()
+
+	Log("starting to wait for Helm release to become available and deployed")
+	Eventually(func() bool {
+		getClient := helmAction.NewGet(input.ActionConfig)
+
+		if release, err := getClient.Run(input.ReleaseName); err == nil {
+			if release != nil && release.Info.Status == helmRelease.StatusDeployed {
+				return true
+			}
+		}
+
+		return false
+	}, intervals...).Should(BeTrue(), "Failed to get Helm release %s on workload cluster %s", input.ReleaseName, input.ClusterName)
+	Logf("Helm release %s is now deployed, took %v", input.ReleaseName, time.Since(start))
 }
 
 // logCheckpoint prints a message indicating the start or end of the current test spec,
