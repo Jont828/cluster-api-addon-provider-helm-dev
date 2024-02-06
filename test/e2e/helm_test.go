@@ -81,7 +81,6 @@ var _ = Describe("Workload cluster creation", func() {
 		It("With default template and calico Helm chart", func() {
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
-				withFlavor(""),
 				withNamespace(namespace.Name),
 				withClusterName(clusterName),
 				withControlPlaneMachineCount(1),
@@ -89,7 +88,6 @@ var _ = Describe("Workload cluster creation", func() {
 				withControlPlaneWaiters(clusterctl.ControlPlaneWaiters{
 					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
 				}),
-				// }),
 			), result)
 
 			// Create new Helm chart
