@@ -160,7 +160,7 @@ func prettyPrint(v interface{}) string {
 	return string(b)
 }
 
-// GetWaitForHelmReleaseDeployedInput is a convenience func to compose a WaitForHelmReleaseDeployedInput
+// GetWaitForHelmReleaseDeployedInput is a convenience func to compose a WaitForHelmReleaseDeployedInput.
 func GetWaitForHelmReleaseDeployedInput(ctx context.Context, workloadClusterProxy framework.ClusterProxy, releaseName, namespace string, specName string) WaitForHelmReleaseDeployedInput {
 	Expect(workloadClusterProxy).NotTo(BeNil())
 
@@ -185,7 +185,7 @@ func GetWaitForHelmReleaseDeployedInput(ctx context.Context, workloadClusterProx
 	}
 }
 
-// WaitForHelmReleaseDeployedInput is the input for WaitForDeploymentsAvailable.
+// WaitForHelmReleaseDeployedInput is the input for WaitForHelmReleaseDeployed.
 type WaitForHelmReleaseDeployedInput struct {
 	ActionConfig *helmAction.Configuration
 	Namespace    string
@@ -194,10 +194,8 @@ type WaitForHelmReleaseDeployedInput struct {
 	ClusterName  string
 }
 
-// WaitForHelmReleaseDeployed waits until the Helm release has status.Status = deployed, that signals that
-// the deployment is successful.
+// WaitForHelmReleaseDeployed waits until the Helm release has status.Status = deployed, which signals that the Helm release was successfully deployed.
 func WaitForHelmReleaseDeployed(ctx context.Context, input WaitForHelmReleaseDeployedInput, intervals ...interface{}) {
-	// Watch for Helm release
 	start := time.Now()
 
 	Log("starting to wait for Helm release to become available and deployed")

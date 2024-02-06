@@ -36,21 +36,19 @@ import (
 )
 
 var nginxValues = `controller:
-name: "{{ .ControlPlane.metadata.name }}-nginx"
+  name: "{{ .ControlPlane.metadata.name }}-nginx"
   nginxStatus:
     allowCidrs: 127.0.0.1,::1,{{ index .Cluster.spec.clusterNetwork.pods.cidrBlocks 0 }}`
 
 var _ = Describe("Workload cluster creation", func() {
 	var (
-		ctx       = context.TODO()
-		specName  = "create-workload-cluster"
-		namespace *corev1.Namespace
-		// cancelWatches     context.CancelFunc
+		ctx               = context.TODO()
+		specName          = "create-workload-cluster"
+		namespace         *corev1.Namespace
 		result            *clusterctl.ApplyClusterTemplateAndWaitResult
 		clusterName       string
 		clusterNamePrefix string
-		// additionalCleanup func()
-		specTimes = map[string]time.Time{}
+		specTimes         = map[string]time.Time{}
 	)
 
 	BeforeEach(func() {
@@ -130,9 +128,9 @@ var _ = Describe("Workload cluster creation", func() {
 				})
 			})
 
-			// Try to update Helm values and expect revision
+			// TODO: try to update Helm values and expect revision
 
-			// Add workload cluster
+			// TODO: try to add additional workload clusters
 		})
 	})
 })

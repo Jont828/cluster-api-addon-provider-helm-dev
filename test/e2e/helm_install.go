@@ -33,7 +33,7 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework"
 )
 
-// HelmInstallInput ...
+// HelmInstallInput specifies the input for installing a Helm chart on a workload cluster and verifying that it was successful.
 type HelmInstallInput struct {
 	BootstrapClusterProxy framework.ClusterProxy
 	Namespace             *corev1.Namespace
@@ -41,6 +41,9 @@ type HelmInstallInput struct {
 	HelmChartProxy        *addonsv1alpha1.HelmChartProxy
 }
 
+// HelmInstallSpec implements a test that verifies a Helm chart can be installed on a workload cluster. It creates a HelmChartProxy
+// resource and patches the Cluster labels such that they match the HelmChartProxy's clusterSelector. It then waits for the Helm
+// release to be deployed on the workload cluster.
 func HelmInstallSpec(ctx context.Context, inputGetter func() HelmInstallInput) {
 	var (
 		specName             = "helm-install"
