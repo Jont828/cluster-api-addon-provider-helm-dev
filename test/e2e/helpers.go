@@ -31,11 +31,11 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	helmAction "helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/kube"
 	helmRelease "helm.sh/helm/v3/pkg/release"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/kubernetes"
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -169,15 +169,13 @@ func GetWaitForHelmReleaseDeployedInput(ctx context.Context, workloadClusterProx
 	Expect(releaseName).NotTo(BeEmpty())
 
 	workloadKubeconfigPath := workloadClusterProxy.GetKubeconfigPath()
-
-	cliConfig := genericclioptions.NewConfigFlags(false)
-	cliConfig.KubeConfig = &workloadKubeconfigPath
-
+	config := kube.GetConfig(workloadKubeconfigPath, "", namespace)
 	actionConfig := new(helmAction.Configuration)
-	err := actionConfig.Init(cliConfig, namespace, "secret", Logf)
+
+	err := actionConfig.Init(config, namespace, "secret", Logf)
+	Expect(err).NotTo(HaveOccurred())
 
 	var release *helmRelease.Release
-	Expect(err).NotTo(HaveOccurred())
 	Eventually(func() error {
 		getClient := helmAction.NewGet(actionConfig)
 		release, err := getClient.Run(releaseName)
