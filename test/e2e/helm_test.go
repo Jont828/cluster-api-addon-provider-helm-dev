@@ -35,6 +35,11 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 )
 
+var nginxValues = `controller:
+name: "{{ .ControlPlane.metadata.name }}-nginx"
+  nginxStatus:
+    allowCidrs: 127.0.0.1,::1,{{ index .Cluster.spec.clusterNetwork.pods.cidrBlocks 0 }}`
+
 var _ = Describe("Workload cluster creation", func() {
 	var (
 		ctx       = context.TODO()
@@ -108,14 +113,11 @@ var _ = Describe("Workload cluster creation", func() {
 								"nginxIngress": "enabled",
 							},
 						},
-						ReleaseName: "nginx-ingress",
-						ChartName:   "nginx-ingress",
-						RepoURL:     "https://helm.nginx.com/stable",
-						ValuesTemplate: `controller:
-            name: "{{ .ControlPlane.metadata.name }}-nginx"
-              nginxStatus:
-                allowCidrs: 127.0.0.1,::1,{{ index .Cluster.spec.clusterNetwork.pods.cidrBlocks 0 }}`,
-						Options: &addonsv1alpha1.HelmOptions{},
+						ReleaseName:    "nginx-ingress",
+						ChartName:      "nginx-ingress",
+						RepoURL:        "https://helm.nginx.com/stable",
+						ValuesTemplate: nginxValues,
+						Options:        &addonsv1alpha1.HelmOptions{},
 					},
 				}
 				HelmInstallSpec(ctx, func() HelmInstallInput {
