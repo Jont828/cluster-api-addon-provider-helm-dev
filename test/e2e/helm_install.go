@@ -47,11 +47,11 @@ type HelmInstallInput struct {
 
 func HelmInstallSpec(ctx context.Context, inputGetter func() HelmInstallInput) {
 	var (
-		specName         = "helm-install"
-		input            HelmInstallInput
-		mgmtClusterProxy framework.ClusterProxy
-		workloadClient   ctrlclient.Client
-		mgmtClient       ctrlclient.Client
+		specName             = "helm-install"
+		input                HelmInstallInput
+		workloadClusterProxy framework.ClusterProxy
+		workloadClient       ctrlclient.Client
+		mgmtClient           ctrlclient.Client
 	)
 
 	input = inputGetter()
@@ -59,13 +59,13 @@ func HelmInstallSpec(ctx context.Context, inputGetter func() HelmInstallInput) {
 	Expect(input.Namespace).NotTo(BeNil(), "Invalid argument. input.Namespace can't be nil when calling %s spec", specName)
 
 	By("creating a Kubernetes client to the workload cluster")
-	workloadClusterProxy := input.BootstrapClusterProxy.GetWorkloadCluster(ctx, input.Namespace.Name, input.ClusterName)
+	workloadClusterProxy = input.BootstrapClusterProxy.GetWorkloadCluster(ctx, input.Namespace.Name, input.ClusterName)
 	Expect(workloadClusterProxy).NotTo(BeNil())
 
 	workloadClient = workloadClusterProxy.GetClient()
 	Expect(workloadClient).NotTo(BeNil())
 
-	mgmtClient = mgmtClusterProxy.GetClient()
+	mgmtClient = input.BootstrapClusterProxy.GetClient()
 	Expect(mgmtClient).NotTo(BeNil())
 
 	// Create HCP
