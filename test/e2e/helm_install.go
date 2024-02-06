@@ -50,7 +50,6 @@ func HelmInstallSpec(ctx context.Context, inputGetter func() HelmInstallInput) {
 		specName             = "helm-install"
 		input                HelmInstallInput
 		workloadClusterProxy framework.ClusterProxy
-		workloadClient       ctrlclient.Client
 		mgmtClient           ctrlclient.Client
 	)
 
