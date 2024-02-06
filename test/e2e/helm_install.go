@@ -58,28 +58,22 @@ func HelmInstallSpec(ctx context.Context, inputGetter func() HelmInstallInput) {
 	Expect(input.BootstrapClusterProxy).NotTo(BeNil(), "Invalid argument. input.BootstrapClusterProxy can't be nil when calling %s spec", specName)
 	Expect(input.Namespace).NotTo(BeNil(), "Invalid argument. input.Namespace can't be nil when calling %s spec", specName)
 
-	By("creating a Kubernetes client to the workload cluster")
-	workloadClusterProxy = input.BootstrapClusterProxy.GetWorkloadCluster(ctx, input.Namespace.Name, input.ClusterName)
-	Expect(workloadClusterProxy).NotTo(BeNil())
-
-	workloadClient = workloadClusterProxy.GetClient()
-	Expect(workloadClient).NotTo(BeNil())
-
+	By("creating a Kubernetes client to the management cluster")
 	mgmtClient = input.BootstrapClusterProxy.GetClient()
 	Expect(mgmtClient).NotTo(BeNil())
 
-	// Create HCP
+	// Create HCP on management Cluster
 	Byf("Creating HelmChartProxy %s/%s", input.HelmChartProxy.Namespace, input.HelmChartProxy.Name)
-	err := workloadClient.Create(ctx, input.HelmChartProxy)
+	err := mgmtClient.Create(ctx, input.HelmChartProxy)
 	Expect(err).NotTo(HaveOccurred())
 
-	// Get Cluster
+	// Get Cluster from management Cluster
 	cluster := &clusterv1.Cluster{}
 	key := types.NamespacedName{
 		Namespace: input.Namespace.Name,
 		Name:      input.ClusterName,
 	}
-	err = workloadClient.Get(ctx, key, cluster)
+	err = mgmtClient.Get(ctx, key, cluster)
 	Expect(err).NotTo(HaveOccurred())
 
 	// Patch cluster labels, ignore match expressions for now
@@ -93,10 +87,14 @@ func HelmInstallSpec(ctx context.Context, inputGetter func() HelmInstallInput) {
 		labels[k] = v
 	}
 
-	err = workloadClient.Update(ctx, cluster)
+	err = mgmtClient.Update(ctx, cluster)
 	Expect(err).NotTo(HaveOccurred())
 
-	// Get Cluster proxy
+	// Get workload Cluster proxy
+	By("creating a clusterctl proxy to the workload cluster")
+	workloadClusterProxy = input.BootstrapClusterProxy.GetWorkloadCluster(ctx, input.Namespace.Name, input.ClusterName)
+	Expect(workloadClusterProxy).NotTo(BeNil())
+
 	workloadKubeconfigPath := workloadClusterProxy.GetKubeconfigPath()
 
 	cliConfig := genericclioptions.NewConfigFlags(false)

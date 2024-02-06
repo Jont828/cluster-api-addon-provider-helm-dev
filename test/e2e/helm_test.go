@@ -71,7 +71,7 @@ var _ = Describe("Workload cluster creation", func() {
 		// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
 		var err error
 		namespace, _, err = setupSpecNamespace(ctx, clusterNamePrefix, bootstrapClusterProxy, artifactFolder)
-		// namespace, cancelWatches, err = setupSpecNamespace(ctx, clusterNamePrefix, bootstrapClusterProxy, artifactFolder)
+		// cancelWatches is the blank return arg above.
 		Expect(err).NotTo(HaveOccurred())
 
 		result = new(clusterctl.ApplyClusterTemplateAndWaitResult)
