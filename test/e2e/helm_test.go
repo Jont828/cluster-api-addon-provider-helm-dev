@@ -79,6 +79,7 @@ var _ = Describe("Workload cluster creation", func() {
 
 	Context("Creating workload cluster [REQUIRED]", func() {
 		It("With default template and calico Helm chart", func() {
+			clusterName = fmt.Sprintf("%s-%s", specName, util.RandomString(6))
 			clusterctl.ApplyClusterTemplateAndWait(ctx, createApplyClusterTemplateInput(
 				specName,
 				withNamespace(namespace.Name),
