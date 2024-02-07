@@ -178,12 +178,12 @@ func GetWaitForHelmReleaseDeployedInput(ctx context.Context, workloadClusterProx
 	var release *helmRelease.Release
 	Eventually(func() error {
 		getClient := helmAction.NewGet(actionConfig)
-		release, err := getClient.Run(releaseName)
-		if err == nil {
+		if r, err := getClient.Run(releaseName); err != nil {
 			return err
-		}
-		if release == nil {
+		} else if r == nil {
 			return errors.Errorf("Helm release %s not found", releaseName)
+		} else {
+			release = r
 		}
 
 		return nil
