@@ -71,10 +71,7 @@ var _ webhook.Validator = &HelmReleaseProxy{}
 func (p *HelmReleaseProxy) ValidateCreate() (admission.Warnings, error) {
 	helmreleaseproxylog.Info("validate create", "name", p.Name)
 
-	if p.Spec.ReleaseName != "" && p.Spec.Options.Install.GenerateReleaseName {
-		return nil, fmt.Errorf("spec.releaseName and spec.options.install.generateReleaseName cannot be set at the same time")
-	}
-
+	// They can both be set here because of the defaulting webhook.
 	if p.Spec.ReleaseName == "" && !p.Spec.Options.Install.GenerateReleaseName {
 		return nil, fmt.Errorf("spec.releaseName and spec.options.install.generateReleaseName cannot be empty/unset at the same time")
 	}
@@ -83,7 +80,6 @@ func (p *HelmReleaseProxy) ValidateCreate() (admission.Warnings, error) {
 		return nil, err
 	}
 
-	// TODO(user): fill in your validation logic upon object creation.
 	return nil, nil
 }
 
