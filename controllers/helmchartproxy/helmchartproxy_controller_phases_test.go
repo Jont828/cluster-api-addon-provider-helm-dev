@@ -1065,15 +1065,15 @@ func TestShouldReinstallHelmRelease(t *testing.T) {
 		{
 			name: "generated release name changed, should reinstall",
 			helmReleaseProxy: &addonsv1alpha1.HelmReleaseProxy{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						addonsv1alpha1.IsReleaseNameGeneratedAnnotation: "true",
-					},
-				},
 				Spec: addonsv1alpha1.HelmReleaseProxySpec{
 					ChartName:   "test-chart",
 					RepoURL:     "https://test-repo-url",
 					ReleaseName: "generated-release-name",
+					Options: addonsv1alpha1.HelmOptions{
+						Install: addonsv1alpha1.HelmInstallOptions{
+							GenerateReleaseName: true,
+						},
+					},
 				},
 			},
 			helmChartProxy: &addonsv1alpha1.HelmChartProxy{
@@ -1081,22 +1081,27 @@ func TestShouldReinstallHelmRelease(t *testing.T) {
 					ChartName:   "test-chart",
 					RepoURL:     "https://test-repo-url",
 					ReleaseName: "some-other-release-name",
+					Options: addonsv1alpha1.HelmOptions{
+						Install: addonsv1alpha1.HelmInstallOptions{
+							GenerateReleaseName: false,
+						},
+					},
 				},
 			},
 			reinstall: true,
 		},
 		{
-			name: "generated release name unchanged, nothing to do",
+			name: "replacing non-generated release name with generated release name, should reinstall",
 			helmReleaseProxy: &addonsv1alpha1.HelmReleaseProxy{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						addonsv1alpha1.IsReleaseNameGeneratedAnnotation: "true",
-					},
-				},
 				Spec: addonsv1alpha1.HelmReleaseProxySpec{
 					ChartName:   "test-chart",
 					RepoURL:     "https://test-repo-url",
-					ReleaseName: "generated-release-name",
+					ReleaseName: "some-release-name",
+					Options: addonsv1alpha1.HelmOptions{
+						Install: addonsv1alpha1.HelmInstallOptions{
+							GenerateReleaseName: false,
+						},
+					},
 				},
 			},
 			helmChartProxy: &addonsv1alpha1.HelmChartProxy{
@@ -1104,6 +1109,39 @@ func TestShouldReinstallHelmRelease(t *testing.T) {
 					ChartName:   "test-chart",
 					RepoURL:     "https://test-repo-url",
 					ReleaseName: "",
+					Options: addonsv1alpha1.HelmOptions{
+						Install: addonsv1alpha1.HelmInstallOptions{
+							GenerateReleaseName: true,
+						},
+					},
+				},
+			},
+			reinstall: true,
+		},
+		{
+			name: "generated release name unchanged, nothing to do",
+			helmReleaseProxy: &addonsv1alpha1.HelmReleaseProxy{
+				Spec: addonsv1alpha1.HelmReleaseProxySpec{
+					ChartName:   "test-chart",
+					RepoURL:     "https://test-repo-url",
+					ReleaseName: "generated-release-name",
+					Options: addonsv1alpha1.HelmOptions{
+						Install: addonsv1alpha1.HelmInstallOptions{
+							GenerateReleaseName: true,
+						},
+					},
+				},
+			},
+			helmChartProxy: &addonsv1alpha1.HelmChartProxy{
+				Spec: addonsv1alpha1.HelmChartProxySpec{
+					ChartName:   "test-chart",
+					RepoURL:     "https://test-repo-url",
+					ReleaseName: "",
+					Options: addonsv1alpha1.HelmOptions{
+						Install: addonsv1alpha1.HelmInstallOptions{
+							GenerateReleaseName: true,
+						},
+					},
 				},
 			},
 			reinstall: false,
@@ -1111,15 +1149,15 @@ func TestShouldReinstallHelmRelease(t *testing.T) {
 		{
 			name: "non-generated release name changed, should reinstall",
 			helmReleaseProxy: &addonsv1alpha1.HelmReleaseProxy{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						addonsv1alpha1.IsReleaseNameGeneratedAnnotation: "true",
-					},
-				},
 				Spec: addonsv1alpha1.HelmReleaseProxySpec{
 					ChartName:   "test-chart",
 					RepoURL:     "https://test-repo-url",
 					ReleaseName: "test-release-name",
+					Options: addonsv1alpha1.HelmOptions{
+						Install: addonsv1alpha1.HelmInstallOptions{
+							GenerateReleaseName: false,
+						},
+					},
 				},
 			},
 			helmChartProxy: &addonsv1alpha1.HelmChartProxy{
@@ -1127,6 +1165,11 @@ func TestShouldReinstallHelmRelease(t *testing.T) {
 					ChartName:   "test-chart",
 					RepoURL:     "https://test-repo-url",
 					ReleaseName: "some-other-release-name",
+					Options: addonsv1alpha1.HelmOptions{
+						Install: addonsv1alpha1.HelmInstallOptions{
+							GenerateReleaseName: false,
+						},
+					},
 				},
 			},
 			reinstall: true,
@@ -1134,11 +1177,6 @@ func TestShouldReinstallHelmRelease(t *testing.T) {
 		{
 			name: "release namespace changed, should reinstall",
 			helmReleaseProxy: &addonsv1alpha1.HelmReleaseProxy{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						addonsv1alpha1.IsReleaseNameGeneratedAnnotation: "true",
-					},
-				},
 				Spec: addonsv1alpha1.HelmReleaseProxySpec{
 					ChartName:        "test-chart",
 					RepoURL:          "https://test-repo-url",

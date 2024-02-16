@@ -145,7 +145,7 @@ spec:
                 type: string
               options:
                 description: |-
-                  Options represents the helm setting options which can be used to control behaviour of helm operations(Install, Upgrade, Delete, etc)
+                  Options represents the helm setting options which can be used to control behaviour of helm operations (Install, Upgrade, Delete, etc)
                   via options like wait, skipCrds, timeout, waitForJobs, etc.
                 properties:
                   atomic:
@@ -182,6 +182,13 @@ spec:
                           HelmChartProxySpec.ReleaseNamespace if it does not exist yet.
                           On uninstall, the namespace will not be garbage collected.
                           If it is not specified by user, will be set to default 'true'.
+                        type: boolean
+                      generateReleaseName:
+                        description: |-
+                          GenerateReleaseName indicates a release name should be generated for the Helm chart on each selected cluster. It will be set to true
+                          by default if the `ReleaseName` field is not specified.
+                          If this is set to true, the `ReleaseName` field in the spec must be empty upon resource creatio, i.e. generating and specifying
+                          a release name are mutually exclusive.
                         type: boolean
                       includeCRDs:
                         description: IncludeCRDs determines whether CRDs stored as
@@ -263,7 +270,8 @@ spec:
                 type: object
               releaseName:
                 description: ReleaseName is the release name of the installed Helm
-                  chart. If it is not specified, a name will be generated.
+                  chart. If the `GenerateReleaseName` install option is set, then
+                  this field was auto-generated.
                 type: string
               repoURL:
                 description: |-
@@ -283,6 +291,7 @@ spec:
             required:
             - chartName
             - clusterRef
+            - releaseName
             - repoURL
             type: object
           status:

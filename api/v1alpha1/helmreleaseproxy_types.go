@@ -29,9 +29,6 @@ const (
 
 	// HelmChartProxyLabelName is the label signifying which HelmChartProxy a HelmReleaseProxy is associated with.
 	HelmChartProxyLabelName = "helmreleaseproxy.addons.cluster.x-k8s.io/helmchartproxy-name"
-
-	// IsReleaseNameGeneratedAnnotation is the annotation signifying the Helm release name is auto-generated.
-	IsReleaseNameGeneratedAnnotation = "helmreleaseproxy.addons.cluster.x-k8s.io/is-release-name-generated"
 )
 
 // HelmReleaseProxySpec defines the desired state of HelmReleaseProxy.
