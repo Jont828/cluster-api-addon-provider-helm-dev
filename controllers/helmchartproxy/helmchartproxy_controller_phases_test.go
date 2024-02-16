@@ -995,6 +995,7 @@ func TestConstructHelmReleaseProxy(t *testing.T) {
 }
 
 func TestShouldReinstallHelmRelease(t *testing.T) {
+	// TODO: fix this test
 	testCases := []struct {
 		name             string
 		helmReleaseProxy *addonsv1alpha1.HelmReleaseProxy

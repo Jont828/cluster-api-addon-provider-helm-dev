@@ -236,10 +236,16 @@ func shouldReinstallHelmRelease(ctx context.Context, existing *addonsv1alpha1.He
 
 	log.V(2).Info("Checking if HelmReleaseProxy needs to be reinstalled by by checking if immutable fields changed", "helmReleaseProxy", existing.Name)
 
-	annotations := existing.GetAnnotations()
-	result, ok := annotations[addonsv1alpha1.IsReleaseNameGeneratedAnnotation]
+	// Cases for release name:
+	// 1. Switch from generated name to non-generated name
+	// - existing.GenerateReleaseName = true, existing.ReleaseName = "some-name", hcp.GenerateReleaseName = false, hcp.ReleaseName = "some-new-name"
+	// 2. Switch from non-generated name to generated name
+	// - existing.GenerateReleaseName = false, existing.ReleaseName = "some-name", hcp.GenerateReleaseName = true, hcp.ReleaseName = ""
+	// 3. Switch from one non-generated name to another non-generated name
+	// - existing.GenerateReleaseName = false, existing.ReleaseName = "some-name", hcp.GenerateReleaseName = false, hcp.ReleaseName = "some-new-name"
+	// 4. Do NOT reinstall when both are generated, i.e. meaning we can't naively check if hcp.ReleaseName != existing.ReleaseName as hcp.ReleaseName is empty
+	// - existing.GenerateReleaseName = true, existing.ReleaseName = "some-name", hcp.GenerateReleaseName = true, hcp.ReleaseName = ""
 
-	isReleaseNameGenerated := ok && result == "true"
 	switch {
 	case existing.Spec.ChartName != helmChartProxy.Spec.ChartName:
 		log.V(2).Info("ChartName changed", "existing", existing.Spec.ChartName, "helmChartProxy", helmChartProxy.Spec.ChartName)
@@ -247,10 +253,11 @@ func shouldReinstallHelmRelease(ctx context.Context, existing *addonsv1alpha1.He
 	case existing.Spec.RepoURL != helmChartProxy.Spec.RepoURL:
 		log.V(2).Info("RepoURL changed", "existing", existing.Spec.RepoURL, "helmChartProxy", helmChartProxy.Spec.RepoURL)
 		return true
-	case isReleaseNameGenerated && helmChartProxy.Spec.ReleaseName != "":
-		log.V(2).Info("Generated ReleaseName changed", "existing", existing.Spec.ReleaseName, "helmChartProxy", helmChartProxy.Spec.ReleaseName)
+	case existing.Spec.Options.Install.GenerateReleaseName != helmChartProxy.Spec.Options.Install.GenerateReleaseName:
+		log.V(2).Info("Toggling ReleaseName generation", "existing", existing.Spec.Options.Install.GenerateReleaseName, "helmChartProxy", helmChartProxy.Spec.Options.Install.GenerateReleaseName)
 		return true
-	case !isReleaseNameGenerated && existing.Spec.ReleaseName != helmChartProxy.Spec.ReleaseName:
+	case !helmChartProxy.Spec.Options.Install.GenerateReleaseName && existing.Spec.ReleaseName != helmChartProxy.Spec.ReleaseName:
+		// If the release name is being generated, the HelmChartProxy release name will always be empty and not be equal to the existing release name.
 		log.V(2).Info("Non-generated ReleaseName changed", "existing", existing.Spec.ReleaseName, "helmChartProxy", helmChartProxy.Spec.ReleaseName)
 		return true
 	case existing.Spec.ReleaseNamespace != helmChartProxy.Spec.ReleaseNamespace:

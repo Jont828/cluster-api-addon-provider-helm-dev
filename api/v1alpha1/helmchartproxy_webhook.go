@@ -50,6 +50,10 @@ const helmTimeout = 10 * time.Minute
 func (p *HelmChartProxy) Default() {
 	helmchartproxylog.Info("default", "name", p.Name)
 
+	if p.Spec.ReleaseName == "" {
+		p.Spec.Options.Install.GenerateReleaseName = true
+	}
+
 	if p.Spec.ReleaseNamespace == "" {
 		p.Spec.ReleaseNamespace = "default"
 	}
@@ -70,10 +74,18 @@ func (p *HelmChartProxy) Default() {
 var _ webhook.Validator = &HelmChartProxy{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (r *HelmChartProxy) ValidateCreate() (admission.Warnings, error) {
-	helmchartproxylog.Info("validate create", "name", r.Name)
+func (p *HelmChartProxy) ValidateCreate() (admission.Warnings, error) {
+	helmchartproxylog.Info("validate create", "name", p.Name)
 
-	if err := isUrlValid(r.Spec.RepoURL); err != nil {
+	if p.Spec.ReleaseName != "" && p.Spec.Options.Install.GenerateReleaseName {
+		return nil, fmt.Errorf("spec.releaseName and spec.options.install.generateReleaseName cannot be set at the same time")
+	}
+
+	if p.Spec.ReleaseName == "" && !p.Spec.Options.Install.GenerateReleaseName {
+		return nil, fmt.Errorf("spec.releaseName and spec.options.install.generateReleaseName cannot be empty/unset at the same time")
+	}
+
+	if err := isUrlValid(p.Spec.RepoURL); err != nil {
 		return nil, err
 	}
 
@@ -81,10 +93,18 @@ func (r *HelmChartProxy) ValidateCreate() (admission.Warnings, error) {
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (r *HelmChartProxy) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
-	helmchartproxylog.Info("validate update", "name", r.Name)
+func (p *HelmChartProxy) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
+	helmchartproxylog.Info("validate update", "name", p.Name)
 
-	if err := isUrlValid(r.Spec.RepoURL); err != nil {
+	if p.Spec.ReleaseName != "" && p.Spec.Options.Install.GenerateReleaseName {
+		return nil, fmt.Errorf("spec.releaseName and spec.options.install.generateReleaseName cannot be set at the same time")
+	}
+
+	if p.Spec.ReleaseName == "" && !p.Spec.Options.Install.GenerateReleaseName {
+		return nil, fmt.Errorf("spec.releaseName and spec.options.install.generateReleaseName cannot be empty/unset at the same time")
+	}
+
+	if err := isUrlValid(p.Spec.RepoURL); err != nil {
 		return nil, err
 	}
 
@@ -92,8 +112,8 @@ func (r *HelmChartProxy) ValidateUpdate(old runtime.Object) (admission.Warnings,
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (r *HelmChartProxy) ValidateDelete() (admission.Warnings, error) {
-	helmchartproxylog.Info("validate delete", "name", r.Name)
+func (p *HelmChartProxy) ValidateDelete() (admission.Warnings, error) {
+	helmchartproxylog.Info("validate delete", "name", p.Name)
 
 	// TODO(user): fill in your validation logic upon object deletion.
 	return nil, nil

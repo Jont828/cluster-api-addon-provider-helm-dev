@@ -23,6 +23,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -48,8 +49,16 @@ var _ webhook.Defaulter = &HelmReleaseProxy{}
 func (p *HelmReleaseProxy) Default() {
 	helmreleaseproxylog.Info("default", "name", p.Name)
 
+	if p.Spec.ReleaseName == "" {
+		p.Spec.Options.Install.GenerateReleaseName = true
+	}
+
 	if p.Spec.ReleaseNamespace == "" {
 		p.Spec.ReleaseNamespace = "default"
+	}
+
+	if p.Spec.Options.Install.GenerateReleaseName {
+		p.Spec.ReleaseName = fmt.Sprintf("%s-%s", p.Spec.ChartName, util.RandomString(6))
 	}
 }
 
@@ -59,8 +68,20 @@ func (p *HelmReleaseProxy) Default() {
 var _ webhook.Validator = &HelmReleaseProxy{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (r *HelmReleaseProxy) ValidateCreate() (admission.Warnings, error) {
-	helmreleaseproxylog.Info("validate create", "name", r.Name)
+func (p *HelmReleaseProxy) ValidateCreate() (admission.Warnings, error) {
+	helmreleaseproxylog.Info("validate create", "name", p.Name)
+
+	if p.Spec.ReleaseName != "" && p.Spec.Options.Install.GenerateReleaseName {
+		return nil, fmt.Errorf("spec.releaseName and spec.options.install.generateReleaseName cannot be set at the same time")
+	}
+
+	if p.Spec.ReleaseName == "" && !p.Spec.Options.Install.GenerateReleaseName {
+		return nil, fmt.Errorf("spec.releaseName and spec.options.install.generateReleaseName cannot be empty/unset at the same time")
+	}
+
+	if err := isUrlValid(p.Spec.RepoURL); err != nil {
+		return nil, err
+	}
 
 	// TODO(user): fill in your validation logic upon object creation.
 	return nil, nil
@@ -90,14 +111,26 @@ func (r *HelmReleaseProxy) ValidateUpdate(oldRaw runtime.Object) (admission.Warn
 		)
 	}
 
+	if !reflect.DeepEqual(r.Spec.ReleaseName, old.Spec.ReleaseName) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "ReleaseName"),
+				r.Spec.ReleaseName, "field is immutable"),
+		)
+	}
+
+	if !reflect.DeepEqual(r.Spec.Options.Install.GenerateReleaseName, old.Spec.Options.Install.GenerateReleaseName) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "options", "install", "generateReleaseName"),
+				r.Spec.Options.Install.GenerateReleaseName, "field is immutable"),
+		)
+	}
+
 	if !reflect.DeepEqual(r.Spec.ReleaseNamespace, old.Spec.ReleaseNamespace) {
 		allErrs = append(allErrs,
 			field.Invalid(field.NewPath("spec", "ReleaseNamespace"),
 				r.Spec.ReleaseNamespace, "field is immutable"),
 		)
 	}
-
-	// TODO: add webhook for ReleaseName. Currently it's being set if the release name is generated.
 
 	if len(allErrs) > 0 {
 		return nil, apierrors.NewInvalid(GroupVersion.WithKind("HelmReleaseProxy").GroupKind(), r.Name, allErrs)

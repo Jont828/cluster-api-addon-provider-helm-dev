@@ -237,18 +237,11 @@ func (r *HelmReleaseProxyReconciler) Reconcile(ctx context.Context, req ctrl.Req
 }
 
 // reconcileNormal handles HelmReleaseProxy reconciliation when it is not being deleted. This will install or upgrade the HelmReleaseProxy on the Cluster.
-// It will set the ReleaseName on the HelmReleaseProxy if the name is generated and also set the release status and release revision.
+// It will also set the release status and release revision.
 func (r *HelmReleaseProxyReconciler) reconcileNormal(ctx context.Context, helmReleaseProxy *addonsv1alpha1.HelmReleaseProxy, client internal.Client, credentialsPath string, kubeconfig string) error {
 	log := ctrl.LoggerFrom(ctx)
 
 	log.V(2).Info("Reconciling HelmReleaseProxy on cluster", "HelmReleaseProxy", helmReleaseProxy.Name, "cluster", helmReleaseProxy.Spec.ClusterRef.Name)
-
-	// TODO: add this here or in HelmChartProxy controller?
-	if helmReleaseProxy.Spec.ReleaseName == "" {
-		helmReleaseProxy.ObjectMeta.SetAnnotations(map[string]string{
-			addonsv1alpha1.IsReleaseNameGeneratedAnnotation: "true",
-		})
-	}
 
 	release, err := client.InstallOrUpgradeHelmRelease(ctx, kubeconfig, credentialsPath, helmReleaseProxy.Spec)
 	if err != nil {
@@ -261,7 +254,6 @@ func (r *HelmReleaseProxyReconciler) reconcileNormal(ctx context.Context, helmRe
 		status := release.Info.Status
 		helmReleaseProxy.SetReleaseStatus(status.String())
 		helmReleaseProxy.SetReleaseRevision(release.Version)
-		helmReleaseProxy.SetReleaseName(release.Name)
 
 		switch {
 		case status == helmRelease.StatusDeployed:

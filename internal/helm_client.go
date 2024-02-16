@@ -218,14 +218,6 @@ func (c *HelmClient) InstallHelmRelease(ctx context.Context, kubeconfig string, 
 	installClient.RepoURL = repoURL
 	installClient.Version = spec.Version
 	installClient.Namespace = spec.ReleaseNamespace
-
-	if spec.ReleaseName == "" {
-		installClient.GenerateName = true
-		spec.ReleaseName, _, err = installClient.NameAndChart([]string{chartName})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to generate release name for chart %s on cluster %s", spec.ChartName, spec.ClusterRef.Name)
-		}
-	}
 	installClient.ReleaseName = spec.ReleaseName
 
 	log.V(2).Info("Locating chart...")

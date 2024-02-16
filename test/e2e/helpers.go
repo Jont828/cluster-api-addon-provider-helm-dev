@@ -289,13 +289,6 @@ func GetWaitForHelmReleaseProxyReadyInput(ctx context.Context, clusterProxy fram
 			return err
 		}
 
-		annotations := hrp.GetAnnotations()
-		if annotations == nil {
-			annotations = map[string]string{}
-		}
-		result, ok := annotations[addonsv1alpha1.IsReleaseNameGeneratedAnnotation]
-
-		isReleaseNameGenerated := ok && result == "true"
 		// When an immutable field gets changed, the old HelmReleaseProxy gets deleted and a new one comes online.
 		// So we need to check to make sure the HelmReleaseProxy we got is the right one by making sure the immutable fields match.
 		switch {
@@ -303,9 +296,10 @@ func GetWaitForHelmReleaseProxyReadyInput(ctx context.Context, clusterProxy fram
 			return errors.Errorf("ChartName mismatch, got `%s` but HelmChartProxy specifies `%s`", hrp.Spec.ChartName, helmChartProxy.Spec.ChartName)
 		case hrp.Spec.RepoURL != helmChartProxy.Spec.RepoURL:
 			return errors.Errorf("RepoURL mismatch, got `%s` but HelmChartProxy specifies `%s`", hrp.Spec.RepoURL, helmChartProxy.Spec.RepoURL)
-		case isReleaseNameGenerated && helmChartProxy.Spec.ReleaseName != "":
-			return errors.Errorf("Generated ReleaseName mismatch, got `%s` but HelmChartProxy specifies `%s`", hrp.Spec.ReleaseName, helmChartProxy.Spec.ReleaseName)
-		case !isReleaseNameGenerated && hrp.Spec.ReleaseName != helmChartProxy.Spec.ReleaseName:
+		case hrp.Spec.Options.Install.GenerateReleaseName != helmChartProxy.Spec.Options.Install.GenerateReleaseName:
+			return errors.Errorf("GenerateReleaseName mismatch, got `%t` but HelmChartProxy specifies `%t`", hrp.Spec.Options.Install.GenerateReleaseName, helmChartProxy.Spec.Options.Install.GenerateReleaseName)
+		case !helmChartProxy.Spec.Options.Install.GenerateReleaseName && hrp.Spec.ReleaseName != helmChartProxy.Spec.ReleaseName:
+			// If the release name is being generated, the HelmChartProxy release name will always be empty the strings comparion will be false.
 			return errors.Errorf("Non-generated ReleaseName mismatch, got `%s` but HelmChartProxy specifies `%s`", hrp.Spec.ReleaseName, helmChartProxy.Spec.ReleaseName)
 		case hrp.Spec.ReleaseNamespace != helmChartProxy.Spec.ReleaseNamespace:
 			return errors.Errorf("ReleaseNamespace mismatch, got `%s` but HelmChartProxy specifies `%s`", hrp.Spec.ReleaseNamespace, helmChartProxy.Spec.ReleaseNamespace)

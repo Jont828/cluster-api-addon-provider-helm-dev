@@ -45,7 +45,8 @@ type HelmChartProxySpec struct {
 	// e.g. chart-path oci://repo-url/chart-name as repoURL: oci://repo-url and https://repo-url/chart-name as repoURL: https://repo-url
 	RepoURL string `json:"repoURL"`
 
-	// ReleaseName is the release name of the installed Helm chart. If it is not specified, a name will be generated.
+	// ReleaseName is the release name of the installed Helm chart. If it is not specified, the `GenerateReleaseName` install option
+	// will be set to true and a release name will be generated for the Helm chart.
 	// +optional
 	ReleaseName string `json:"releaseName,omitempty"`
 
@@ -138,6 +139,13 @@ type HelmOptions struct {
 }
 
 type HelmInstallOptions struct {
+	// GenerateReleaseName indicates a release name should be generated for the Helm chart on each selected cluster. It will be set to true
+	// by default if the `ReleaseName` field is not specified.
+	// If this is set to true, the `ReleaseName` field in the spec must be empty upon resource creatio, i.e. generating and specifying
+	// a release name are mutually exclusive.
+	// +optional
+	GenerateReleaseName bool `json:"generateReleaseName,omitempty"`
+
 	// CreateNamespace indicates the Helm install/upgrade action to create the
 	// HelmChartProxySpec.ReleaseNamespace if it does not exist yet.
 	// On uninstall, the namespace will not be garbage collected.
